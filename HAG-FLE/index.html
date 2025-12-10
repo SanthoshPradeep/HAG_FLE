@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HAG-FLE Interactive Model</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>HAG-FLE Interactive Model</h1>
+            <p class="subtitle">Decentralized Environmental Monitoring with Dynamic Split-Fed Learning</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <h3>System Controls</h3>
+                
+                <div class="control-group">
+                    <label>Number of L1 Devices: <span id="device-count">5</span></label>
+                    <input type="range" id="device-slider" min="3" max="15" value="5">
+                </div>
+
+                <div class="control-group">
+                    <label>Network Latency: <span id="latency-value">50</span>ms</label>
+                    <input type="range" id="latency-slider" min="10" max="200" value="50">
+                </div>
+
+                <div class="control-group">
+                    <label>Device Load: <span id="load-value">50</span>%</label>
+                    <input type="range" id="load-slider" min="10" max="100" value="50">
+                </div>
+
+                <div class="control-group">
+                    <label>Toggle Features:</label>
+                    <div class="toggle-buttons">
+                        <button id="toggle-dsfl" class="toggle-btn active">DSFL</button>
+                        <button id="toggle-mife" class="toggle-btn active">MIFE</button>
+                        <button id="toggle-lwc" class="toggle-btn active">LWC</button>
+                        <button id="toggle-dao" class="toggle-btn active">DAO</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <button id="reset-btn" class="action-btn">Reset Simulation</button>
+                    <button id="pause-btn" class="action-btn">Pause</button>
+                </div>
+            </div>
+
+            <!-- Visualization Area -->
+            <div class="visualization-area">
+                <svg id="main-svg" viewBox="0 0 1200 800">
+                    <!-- Background Grid -->
+                    <defs>
+                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e0e0e0" stroke-width="0.5"/>
+                        </pattern>
+                        <linearGradient id="deviceGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#2E7D32;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="aggregatorGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#1565C0;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="serverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FF9800;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#E65100;stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="glow">
+                            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#grid)" opacity="0.3"/>
+                    
+                    <!-- L3 Global Server -->
+                    <g id="l3-layer" class="layer">
+                        <rect id="l3-server" x="500" y="50" width="200" height="120" rx="10" fill="url(#serverGradient)" class="server-node" filter="url(#glow)"/>
+                        <text x="600" y="115" text-anchor="middle" fill="white" font-size="16" font-weight="bold">Global Server (L3)</text>
+                        <text x="600" y="135" text-anchor="middle" fill="white" font-size="12">Model Aggregation</text>
+                    </g>
+
+                    <!-- L2 Aggregators -->
+                    <g id="l2-layer" class="layer">
+                        <!-- Aggregators will be dynamically created -->
+                    </g>
+
+                    <!-- L1 TinyML Devices -->
+                    <g id="l1-layer" class="layer">
+                        <!-- Devices will be dynamically created -->
+                    </g>
+
+                    <!-- Data Flow Lines -->
+                    <g id="data-flow-layer">
+                        <!-- Flow lines will be dynamically created -->
+                    </g>
+
+                    <!-- Model Partition Visualization -->
+                    <g id="model-partition-viz" opacity="0">
+                        <rect x="50" y="650" width="1100" height="100" rx="5" fill="#f0f0f0" stroke="#333" stroke-width="2"/>
+                        <text x="600" y="680" text-anchor="middle" font-size="14" font-weight="bold">Model Partition (DSFL)</text>
+                        <rect id="l1-partition" x="60" y="690" width="0" height="50" fill="#4CAF50" opacity="0.8"/>
+                        <rect id="l2-partition" x="60" y="690" width="0" height="50" fill="#2196F3" opacity="0.8"/>
+                        <rect id="l3-partition" x="60" y="690" width="0" height="50" fill="#FF9800" opacity="0.8"/>
+                        <line id="cut-layer-line" x1="60" y1="690" x2="60" y2="740" stroke="#FF0000" stroke-width="3" stroke-dasharray="5,5"/>
+                        <text id="cut-layer-label" x="60" y="755" text-anchor="middle" font-size="12" fill="#FF0000" font-weight="bold">Cut Layer</text>
+                    </g>
+                </svg>
+
+                <!-- Tooltip -->
+                <div id="tooltip" class="tooltip"></div>
+            </div>
+
+            <!-- Metrics Panel -->
+            <div class="metrics-panel">
+                <h3>System Metrics</h3>
+                
+                <div class="metric-section">
+                    <h4>Training Performance</h4>
+                    <div class="metric-item">
+                        <span>Model Accuracy:</span>
+                        <span id="accuracy-value">0.00%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span>Training Round:</span>
+                        <span id="round-value">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span>Data Transfer:</span>
+                        <span id="transfer-value">0 MB</span>
+                    </div>
+                </div>
+
+                <div class="metric-section">
+                    <h4>Resource Usage</h4>
+                    <div class="metric-item">
+                        <span>Avg CPU Usage:</span>
+                        <span id="cpu-value">0%</span>
+                    </div>
+                    <div class="metric-item">
+                        <span>Avg Memory:</span>
+                        <span id="memory-value">0 MB</span>
+                    </div>
+                    <div class="metric-item">
+                        <span>Network Delay:</span>
+                        <span id="delay-value">0 ms</span>
+                    </div>
+                </div>
+
+                <div class="metric-section">
+                    <h4>HAG-DAO Governance</h4>
+                    <div class="metric-item">
+                        <span>Active Participants:</span>
+                        <span id="participants-value">0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span>Avg EIS Score:</span>
+                        <span id="eis-value">0.0</span>
+                    </div>
+                    <div class="metric-item">
+                        <span>Total Rewards:</span>
+                        <span id="rewards-value">0 tokens</span>
+                    </div>
+                </div>
+
+                <div class="metric-section">
+                    <h4>Selected Device Info</h4>
+                    <div id="device-info" class="device-info">
+                        <p>Click on a device to see details</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Welcome Modal -->
+        <div id="welcome-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h2>Welcome to the HAG-FLE Interactive Model</h2>
+                <p>Explore how TinyML devices, Dynamic Split-Fed Learning, and a Decentralized Autonomous Organization work together to enable efficient and secure decentralized environmental monitoring.</p>
+                <ul>
+                    <li><strong>Hover</strong> over devices (L1, L2, L3) to see the data flow and how the model is partitioned dynamically.</li>
+                    <li><strong>Click</strong> on a device to see how MIFE encryption protects model updates and how Lightweight Cryptography secures data transmission.</li>
+                    <li><strong>Interact</strong> with the DAO dashboard to see how environmental contributions are measured and rewarded using the Environmental Impact Score (EIS).</li>
+                    <li><strong>Adjust</strong> network conditions using the sliders to see how the system adapts to real-time changes.</li>
+                </ul>
+                <button id="start-btn" class="action-btn">Start Exploring</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
